@@ -125,15 +125,15 @@ conditions:
 
 ### Step 4: Create Files and Confirm
 
-**IMPORTANT**: Rule files must be created in the current working directory's `.claude/` folder, NOT the plugin directory.
+**IMPORTANT**: Rule files must be created in the project root's `.claude/` folder, NOT the plugin directory and NOT a directory the session has `cd`'d into.
 
-Use the current working directory (where Claude Code was started) as the base path.
+The project root is `$CLAUDE_PROJECT_DIR` when that variable is set (Claude Code sets it for the whole session). Otherwise it is the current working directory. The hooks read rules from that same place. A later `cd` changes the hook's working directory, but it does not change where rules are loaded from — a file written beside the new directory is never read.
 
-1. Check if `.claude/` directory exists in current working directory
-   - If not, create it first with: `mkdir -p .claude`
+1. Check if `.claude/` exists under the project root
+   - If not, create it first: `mkdir -p "$CLAUDE_PROJECT_DIR/.claude"` when that variable is set, otherwise `mkdir -p .claude`
 
-2. Use Write tool to create each `.claude/hookify.{name}.local.md` file
-   - Use relative path from current working directory: `.claude/hookify.{name}.local.md`
+2. Use Write tool to create each rule file under that project root
+   - Path: `$CLAUDE_PROJECT_DIR/.claude/hookify.{name}.local.md` (or `.claude/hookify.{name}.local.md` when `CLAUDE_PROJECT_DIR` is unset)
    - The path should resolve to the project's .claude directory, not the plugin's
 
 3. Show user what was created:
@@ -203,7 +203,7 @@ Use the current working directory (where Claude Code was started) as the base pa
 ## Important Notes
 
 - **No restart needed**: Rules take effect immediately on the next tool use
-- **File location**: Create files in project's `.claude/` directory (current working directory), NOT the plugin's .claude/
+- **File location**: Create files in the project root's `.claude/` directory (`$CLAUDE_PROJECT_DIR` when set), NOT the plugin's .claude/ and NOT the directory a later `cd` landed in
 - **Regex syntax**: Use Python regex syntax (raw strings, no need to escape in YAML)
 - **Action types**: Rules can `warn` (default) or `block` operations
 - **Testing**: Test rules immediately after creating them
@@ -211,13 +211,13 @@ Use the current working directory (where Claude Code was started) as the base pa
 ## Troubleshooting
 
 **If rule file creation fails:**
-1. Check current working directory with pwd
-2. Ensure `.claude/` directory exists (create with mkdir if needed)
-3. Use absolute path if needed: `{cwd}/.claude/hookify.{name}.local.md`
+1. Write under the project root: `$CLAUDE_PROJECT_DIR` when it is set, otherwise the current working directory
+2. Ensure that directory's `.claude/` exists (create with mkdir if needed)
+3. Use the absolute path: `$CLAUDE_PROJECT_DIR/.claude/hookify.{name}.local.md`
 4. Verify file was created with Glob or ls
 
 **If rule doesn't trigger after creation:**
-1. Verify file is in project `.claude/` not plugin `.claude/`
+1. Verify file is in the project root's `.claude/` not plugin `.claude/`. Hooks load `$CLAUDE_PROJECT_DIR/.claude/hookify.*.local.md` when that variable is set, even if the session has since changed directory
 2. Check file with Read tool to ensure pattern is correct
 3. Test pattern with: `python3 -c "import re; print(re.search(r'pattern', 'test text'))"`
 4. Verify `enabled: true` in frontmatter

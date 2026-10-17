@@ -142,7 +142,7 @@ Use Python regex syntax:
 ## Troubleshooting
 
 **Hook not triggering:**
-- Check rule file is in `.claude/` directory
+- Check rule file is in the project root's `.claude/` directory. Hooks read `$CLAUDE_PROJECT_DIR/.claude/` when that variable is set, so a file next to a directory the session `cd`'d into is not loaded
 - Verify `enabled: true` in frontmatter
 - Confirm pattern is valid regex
 - Test pattern: `python3 -c "import re; print(re.search('your_pattern', 'test_text'))"`

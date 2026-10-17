@@ -195,8 +195,33 @@ def extract_frontmatter(content: str) -> tuple[Dict[str, Any], str]:
     return frontmatter, message
 
 
+def project_root() -> str:
+    """Directory whose `.claude/` holds hookify rules.
+
+    Claude Code's hook working directory follows the session after `cd`.
+    `CLAUDE_PROJECT_DIR` stays at the project root for the whole session, so
+    rules keep applying after the working directory moves. When it is unset,
+    fall back to the working directory. When it is set but is not a directory,
+    warn and fall back. A silent empty load is how a block rule disappears.
+    """
+    project = os.environ.get('CLAUDE_PROJECT_DIR', '').strip()
+    if not project:
+        return os.getcwd()
+
+    root = os.path.abspath(project)
+    if os.path.isdir(root):
+        return root
+
+    print(
+        f"Warning: CLAUDE_PROJECT_DIR is not a directory ({root}); "
+        "loading hookify rules from the working directory instead",
+        file=sys.stderr,
+    )
+    return os.getcwd()
+
+
 def load_rules(event: Optional[str] = None) -> List[Rule]:
-    """Load all hookify rules from .claude directory.
+    """Load all hookify rules from the project root's .claude directory.
 
     Args:
         event: Optional event filter ("bash", "file", "stop", etc.)
@@ -206,8 +231,9 @@ def load_rules(event: Optional[str] = None) -> List[Rule]:
     """
     rules = []
 
-    # Find all hookify.*.local.md files
-    pattern = os.path.join('.claude', 'hookify.*.local.md')
+    # Find all hookify.*.local.md files under the project root, not the
+    # hook's live working directory. See project_root().
+    pattern = os.path.join(project_root(), '.claude', 'hookify.*.local.md')
     files = glob.glob(pattern)
 
     for file_path in files:
