@@ -275,10 +275,19 @@ function add(m) {
 function line(who, text, replyTo, file) {
   const div = document.createElement('div')
   const t = new Date().toTimeString().slice(0, 8)
-  const reply = replyTo && msgs[replyTo] ? ' ↳ ' + (msgs[replyTo].body.textContent || '(file)').slice(0, 40) : ''
-  div.innerHTML = '[' + t + '] <b>' + who + '</b>' + reply + ': <span class=body></span>'
-  const body = div.querySelector('.body')
+  // Quoted text is an earlier message's textContent. Putting it in innerHTML
+  // parses it as markup, so a typed "<img onerror=...>" runs when quoted.
+  const quote = replyTo && msgs[replyTo] ? ' ↳ ' + (msgs[replyTo].body.textContent || '(file)').slice(0, 40) : ''
+  div.appendChild(document.createTextNode('[' + t + '] '))
+  const whoEl = document.createElement('b')
+  whoEl.textContent = who
+  div.appendChild(whoEl)
+  if (quote) div.appendChild(document.createTextNode(quote))
+  div.appendChild(document.createTextNode(': '))
+  const body = document.createElement('span')
+  body.className = 'body'
   body.textContent = text || ''
+  div.appendChild(body)
   if (file) {
     const indent = 11 + who.length + 2  // '[HH:MM:SS] ' + who + ': '
     if (text) body.appendChild(document.createTextNode('\\n' + ' '.repeat(indent)))
